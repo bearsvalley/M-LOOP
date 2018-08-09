@@ -123,7 +123,7 @@ def txt_file_to_dict(filename):
     inf = float('inf')  #@UnusedVariable
     nan = float('nan')  #@UnusedVariable
 
-    # skip occasional bad input file format by bearsvally Aug.9/2018 
+    #skip occasional bad input file format by bearsvally Aug.9/2018 
     try:
         tdict = eval('dict('+tdict_string+')')
     except:
