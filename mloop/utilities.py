@@ -122,7 +122,13 @@ def txt_file_to_dict(filename):
     array = np.array    #@UnusedVariable
     inf = float('inf')  #@UnusedVariable
     nan = float('nan')  #@UnusedVariable
-    tdict = eval('dict('+tdict_string+')')
+
+    # skip occasional bad input file format by bearsvally Aug.9/2018 
+    try:
+        tdict = eval('dict('+tdict_string+')')
+    except:
+        tdict={'bad':True}
+
     return tdict
     
 def save_dict_to_file(dictionary,filename,file_type):
