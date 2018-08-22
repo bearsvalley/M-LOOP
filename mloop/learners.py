@@ -53,6 +53,8 @@ class Learner():
         learner_archive_file_type (Optional [string]):  File type for archive. Can be either 'txt' a human readable text file, 'pkl' a python dill file, 'mat' a matlab file or None if there is no archive. Default 'mat'.
         log_level (Optional [int]): Level for the learners logger. If None, set to warning. Default None.
         start_datetime (Optional [datetime]): Start date time, if None, is automatically generated.
+    --- extention ---
+    random_state : seed number for random/np.random 
         
     Attributes:
         params_out_queue (queue): Queue for parameters created by learner.
@@ -68,7 +70,17 @@ class Learner():
                  learner_archive_file_type=default_learner_archive_file_type,
                  start_datetime=None,
                  **kwargs):
+        
+        #--- ADD start -----
+        # random_state: seed number for random and np.random.
+        random_state = kwargs.pop('random_state',None)
+        if random_state is not None:
+            print("random_state:",random_state)
+            nr.seed(int(random_state))
+            random.seed(int(random_state))
+        #--- ADD end ------
 
+        
         super(Learner,self).__init__()
         
         global learner_thread_count
