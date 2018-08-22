@@ -957,6 +957,16 @@ class GaussianProcessLearner(Learner, mp.Process):
                 self.has_global_minima = True
             except KeyError:
                 self.has_global_minima = False
+
+            #--------- start change
+            # To prevent TypeError like,
+            #   "TypeError: __init__() got multiple values for keyword argument ..."
+            # some fields in kwargs are removed in advance.
+            #
+            num_params_init = kwargs.pop('num_params',None)
+            min_boundary_init = kwargs.pop('min_boundary',None)
+            max_boundary_init = kwargs.pop('max_boundary',None)
+            #--------- end change
             
             super(GaussianProcessLearner,self).__init__(num_params=num_params,
                              min_boundary=min_boundary,
