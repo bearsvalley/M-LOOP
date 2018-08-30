@@ -1,0 +1,224 @@
+#====================================
+#
+# M-LOOP config File 
+# for Gaussian Process 
+#
+#====================================
+
+# -------------------------
+# File Interface(Default)
+# -------------------------
+#The simplest method to connect your experiment to M-LOOP is with the
+#file interface where data is exchanged by writing files to disk.
+#
+
+interface_type = 'file'
+
+# -------------------------
+# Interface File Format
+# -------------------------
+
+# interface file type
+
+interface_file_type = 'txt' 
+
+#output by the interface and input into the experiment
+
+interface_out_filename = 'exp_input'
+
+# The filename of the file input into the interface
+# and output by the experiment
+
+interface_in_filename  = 'exp_output'
+
+# ----------------------
+# file type of archive
+# ----------------------
+
+#file name of the controller archive
+
+controller_archive_filename = 'controller_archive'
+
+# file type of the controller archive
+#
+# Since float numbers in 'txt' are in the format of ".8f",
+# there will be some loss of precision in your 'txt' format data.
+# 
+
+controller_archive_file_type = 'txt'
+#controller_archive_file_type = 'mat'
+#controller_archive_file_type = 'pkl'
+
+#
+#filename of learner archive
+#
+
+learner_archive_filename = 'learner_archive'
+
+#
+# file type of the learner archive
+#
+# Since float numbers in 'txt' are in the format of ".8f",
+# there will be some loss of precision in your 'txt' format data.
+# 
+
+learner_archive_file_type = 'txt'
+#learner_archive_file_type = 'mat'
+#learner_archive_file_type = 'pkl'
+
+# ----------------------
+# Visualizations
+# ----------------------
+#
+# If you have a controller and learner archive and would like to examine
+#the visualizations again, it is best to do so using the M-LOOP
+#API. For example the following code will plot the visualizations again
+#from the files controller_archive_.mat and learner_archive_.pkl:
+#
+# import mloop.visualizations as mlv
+# import matplotlib.pyplot as plt
+# mlv.configure_plots()
+# mlv.create_controller_visualizations('controller_archive.mat',file_type='mat')
+# mlv.create_gaussian_process_learner_visualizations('learner_archive.pkl',file_type='pkl')
+#
+#plt.show()
+#
+
+visualizations = False
+
+#====================================
+# Learner Condition
+#====================================
+
+# -------------------------
+# Gaussian process options
+# -------------------------
+
+controller_type = 'gaussian_process'
+
+#number of parameters
+
+num_params = 3
+
+#minimum boundary
+
+min_boundary = [-10.,-10.,-10.]             
+
+#maximum boundary
+
+max_boundary = [10.8,10.8,10.8]               
+
+#maximum move distance from best params
+
+trust_region = [4,4,4]                   
+
+#first parameters to try in initial training
+
+first_params = [1.9,-1.0,0]
+
+#initial noise level
+
+noise_level = 1000
+
+#initial lengths scales for GP
+
+length_scale = [1.0]                   
+
+#whether cost function has noise
+
+cost_has_noise = True                  
+
+#whether noise level and lengths scales are updated
+
+update_hyperparameters = True
+
+#find predicted global minima at end 
+
+predict_global_minima_at_end  = True
+
+#====================================
+# Halting conditions
+#====================================
+
+#maximum number of runs
+
+max_num_runs = 1000
+
+# max_num_runs_without_better_params -> convergence 
+
+max_num_runs_without_better_params = 100
+
+# goal
+
+target_cost = 0.00001
+
+#==========================
+# setup for bad condition 
+#==========================
+
+#default cost for bad run
+
+default_bad_cost = 1e4
+
+#default uncertainty for bad run
+
+default_bad_uncertainty = 1
+
+#================================
+# inital trainig learner
+#================================
+
+# ----------------------
+# Training source options
+# ----------------------
+
+# training_type (Optional [string]):
+# 'random': random learner,
+# 'nelder_mead': the Nelder-Mead learner
+# 'differential_evolution': Differential Evolution learner.
+#
+# Default 'differential_evolution'
+
+# This learner is also called if the machine learning learner is too
+# slow and a new point is needed.
+
+#training_type = 'random'
+training_type = 'differential_evolution'
+
+# The number of training runs to before starting the learner.
+# If None, will be 10 or double the number of parameters,
+# whatever is larger.
+
+num_training_runs = None
+
+#filename for training from previous experiment
+
+gp_training_filename ='/home/a9021/M-LOOP/M-LOOP_archives/learner_archive_2018-08-09_15-54.txt'
+#training data file type
+
+gp_training_file_type  = 'txt'         
+
+#---------------------------
+# setup for calculation delay 
+#---------------------------
+#
+# whether to wait for the GP to make predictions or not.
+# Default True 
+# If True, there is never any delay between a returned cost and the next
+# parameters to run for the experiment. In practice,this means if the
+# machine learning learner has not prepared the next parameters in
+# time the learner defined by the initial training source is used
+# instead. If false, the controller will wait for the machine learning
+# learner to predict the next parameters and there may be a delay
+# between runs.
+
+no_delay = True   
+
+#---------------------------
+# Random state
+# (seed for random modules and numpy.random.)
+#---------------------------
+random_state=420
+
+
+
