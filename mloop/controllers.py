@@ -100,10 +100,15 @@ class Controller():
                  max_num_runs_without_better_params = float('+inf'),
                  controller_archive_filename=default_controller_archive_filename,
                  controller_archive_file_type=default_controller_archive_file_type,
+                 status_out_filename=mlu.default_status_out_filename,
+                 status_file_type=mlu.default_status_file_type,
                  archive_extra_dict = None,
                  start_datetime = None,
                  **kwargs):
-
+        #status file
+        self.status_out_filename=status_out_filename
+        self.status_file_type=status_file_type
+        
         #Make logger
         self.remaining_kwargs = mlu._config_logger(**kwargs)
         self.log = logging.getLogger(__name__)
@@ -316,6 +321,13 @@ class Controller():
 
         try:
             log.info('Optimization started.')
+            
+            # ----------------------------
+            # output Status File
+            # ----------------------------
+            status_dict={'Status':1}
+            mlu.save_dict_to_file(status_dict,self.status_out_filename,self.status_file_type)
+            
             self._start_up()
             self._optimization_routine()
             log.info('Controller finished. Closing down M-LOOP. Please wait a moment...')
@@ -330,6 +342,13 @@ class Controller():
             self.log.warning('Safely shut down. Below are results found before exception.')
             self.print_results()
             raise
+
+        # ----------------------------
+        # update Status File  
+        # ----------------------------
+        status_dict={'Status':0}
+        mlu.save_dict_to_file(status_dict,self.status_out_filename,self.status_file_type)
+        
         self._shut_down()
         self.print_results()
         self.log.info('M-LOOP Done.')

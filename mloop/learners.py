@@ -75,7 +75,7 @@ class Learner():
         # random_state: seed number for random and np.random.
         random_state = kwargs.pop('random_state',None)
         if random_state is not None:
-            print("random_state:",random_state)
+        #    print("random_state:",random_state)
             nr.seed(int(random_state))
             random.seed(int(random_state))
         #--- ADD end ------
