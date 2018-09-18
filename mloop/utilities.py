@@ -28,9 +28,6 @@ default_interface_in_filename = 'exp_output'
 default_interface_out_filename = 'exp_input'
 default_interface_file_type = 'txt'
 
-default_status_out_filename='status'
-default_status_file_type= 'txt'
-
 archive_foldername = './M-LOOP_archives/'
 log_foldername = './M-LOOP_logs/'
 default_log_filename = 'M-LOOP_'
