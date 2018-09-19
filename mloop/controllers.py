@@ -124,6 +124,8 @@ class Controller():
         self.in_costs = []
         self.in_uncers = []
         self.in_bads = []
+        self.in_params = []
+        self.in_valids = []
         self.in_extras = []
         self.best_cost = float('inf')
         self.best_uncer = float('nan')
@@ -131,13 +133,16 @@ class Controller():
         self.best_params = float('nan')
 
         #Variables that used internally
-        self.last_out_params = None
+        self.curr_in_params = None
         self.curr_params = None
         self.curr_cost = None
         self.curr_uncer = None
         self.curr_bad = None
         self.curr_extras = None
 
+        self.last_out_params = None
+        self.curr_valid = None
+        
         #Constants
         self.controller_wait = float(1)
 
@@ -196,6 +201,7 @@ class Controller():
                              'in_costs':self.in_costs,
                              'in_uncers':self.in_uncers,
                              'in_bads':self.in_bads,
+                             'in_valid':self.in_valids,
                              'in_extras':self.in_extras,
                              'max_num_runs':self.max_num_runs,
                              'start_datetime':mlu.datetime_to_string(self.start_datetime)}
@@ -280,28 +286,49 @@ class Controller():
             self.curr_cost = float(in_dict.pop('cost',float('nan')))
             self.curr_uncer = float(in_dict.pop('uncer',0))
             self.curr_bad = bool(in_dict.pop('bad',False))
-            self.curr_extras = in_dict
+#            self.curr_extras = [float(__param) for __param in (in_dict.pop('params',in_dict))]
+            self.last_in_params = [float(__param) for __param in (in_dict.pop('params',in_dict))]
         except ValueError:
             self.log.error('One of the values you provided in the cost dict could not be converted into the right type.')
             raise
         if self.curr_bad and ('cost' in in_dict):
             self.log.warning('The cost provided with the bad run will be saved, but not used by the learners.')
 
+        if self.curr_valid is True:
+            self.log.warning('The cost provided with the in valid run will be saved, but not used by the learners.')
+
+        self.in_params.append(self.curr_in_params)
         self.in_costs.append(self.curr_cost)
         self.in_uncers.append(self.curr_uncer)
         self.in_bads.append(self.curr_bad)
         self.in_extras.append(self.curr_extras)
         self.curr_params = self.last_out_params
+
+        
+        if (self.curr_in_params is not None) and (self.last_out_params is not None) and (list(self.last_out_params) != list(self.curr_in_params)):
+            self.curr_valid = False
+            self.log.info('invalid run')
+            
+        else:
+            self.curr_valid = True
+        self.in_valids.append(self.curr_valid)
+            
         if self.curr_cost < self.best_cost:
             self.best_cost = self.curr_cost
             self.best_uncer = self.curr_uncer
             self.best_index =  self.num_in_costs
             self.best_params = self.curr_params
             self.num_last_best_cost = 0
+            
         if self.curr_bad:
             self.log.info('bad run')
+            
         else:
+            self.log.info('curr in params:' + str(self.curr_in_params))
+            self.log.info('last out params:' + str(self.last_out_params))
+            self.log.info('curr_params: ' + str(self.curr_params))
             self.log.info('cost ' + str(self.curr_cost) + ' +/- ' + str(self.curr_uncer))
+            
         #self.log.debug('Got cost num:' + repr(self.num_in_costs))
 
     def save_archive(self):
@@ -495,6 +522,8 @@ class NelderMeadController(Controller):
         '''
         if self.curr_bad:
             cost = float('inf')
+        elif self.curr_valid:
+            cost = float('inf')
         else:
             cost = self.curr_cost
         self.learner_costs_queue.put(cost)
@@ -523,6 +552,8 @@ class DifferentialEvolutionController(Controller):
         Gets next parameters from differential evolution learner.
         '''
         if self.curr_bad:
+            cost = float('inf')
+        elif self.curr_valid:
             cost = float('inf')
         else:
             cost = self.curr_cost
@@ -559,6 +590,7 @@ class MachineLearnerController(Controller):
         self.machine_learner_type = machine_learner_type
         
         self.last_training_cost = None
+        self.last_training_valid = None
         self.last_training_bad = None
         self.last_training_run_flag = False
 
@@ -637,11 +669,13 @@ class MachineLearnerController(Controller):
         if self.last_training_run_flag:
             self.last_training_cost = self.curr_cost
             self.last_training_bad = self.curr_bad
+            self.last_training_invalid = self.curr_valid
             self.last_training_run_flag = False
         self.ml_learner_costs_queue.put((self.curr_params,
                                          self.curr_cost,
                                          self.curr_uncer,
-                                         self.curr_bad))
+                                         self.curr_bad,
+                                         self.curr_valid))
 
     def _next_params(self):
         '''
@@ -650,6 +684,8 @@ class MachineLearnerController(Controller):
         if self.training_type == 'differential_evolution' or self.training_type == 'nelder_mead':
             #Copied from NelderMeadController
             if self.last_training_bad:
+                cost = float('inf')
+            elif self.last_training_invalid:
                 cost = float('inf')
             else:
                 cost = self.last_training_cost
@@ -711,7 +747,7 @@ class MachineLearnerController(Controller):
 
         while self.check_end_conditions():
             run_num = self.num_in_costs + 1
-            if ml_consec==self.generation_num or (self.no_delay and self.ml_learner_params_queue.empty()):
+            if ml_consec == self.generation_num or (self.no_delay and self.ml_learner_params_queue.empty()):
                 self.log.info('Run:' + str(run_num) + ' (trainer)')
                 next_params = self._next_params()
                 self._put_params_and_out_dict(next_params)

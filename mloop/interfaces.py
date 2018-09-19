@@ -66,6 +66,7 @@ class Interface(threading.Thread):
         
     Arguments:
         params_out_queue (queue): Queue for parameters to next be run by experiment.
+        params_in_queue (queue): Queue for parameters that have been returned by experiment.
         costs_in_queue (queue): Queue for costs (and other details) that have been returned by experiment.
         end_event (event): Event which triggers the end of the interface. 
             
@@ -82,6 +83,7 @@ class Interface(threading.Thread):
         self.log.debug('Creating interface.')
         
         self.params_out_queue = mp.Queue()
+        self.params_in_queue = mp.Queue()
         self.costs_in_queue = mp.Queue()
         self.end_event = mp.Event()
         
