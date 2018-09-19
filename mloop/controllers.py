@@ -10,6 +10,7 @@ import mloop.learners as mll
 import mloop.interfaces as mli
 import logging
 import os
+import numpy as np
 
 controller_dict = {'random':1,'nelder_mead':2,'gaussian_process':3,'differential_evolution':4,'neural_net':5}
 number_of_controllers = len(controller_dict)
@@ -35,7 +36,9 @@ def create_controller(interface,
     Args:
         interface (interface): Interface with queues and events to be passed to controller
     Keyword Args:
-        controller_type (Optional [str]): Defines the type of controller can be 'random', 'nelder', 'gaussian_process' or 'neural_net'. Defaults to 'gaussian_process'.
+        controller_type (Optional [str]): Defines the type of controller can be
+        'random', 'nelder', 'gaussian_process' or 'neural_net'. Defaults to
+        'gaussian_process'.
         **controller_config_dict : Options to be passed to controller.
     Returns:
         Controller : threadible object which must be started with start() to get the controller running.
@@ -92,6 +95,7 @@ class Controller():
         out_extras (list): Any extras associated with the output parameters.
         in_costs (list): List of costs received by controller.
         in_uncers (list): List of uncertainties receieved by controller.
+        in_valids (list): List if the parameters at the last run are output  parameters.   
         best_cost (float): The lowest, and best, cost received by the learner.
         best_uncer (float): The uncertainty associated with the best cost.
         best_params (array): The best parameters recieved by the learner.
@@ -177,7 +181,7 @@ class Controller():
         self.target_cost = float(target_cost)
         self.max_num_runs_without_better_params = float(max_num_runs_without_better_params)
         if self.max_num_runs_without_better_params<=0:
-            self.log.error('Max number of repeats must be greater than zero. max_num_runs:'+repr(max_num_runs_without_better_params))
+            self.log.error('Max number of repeats must be greater than zero. max_num_runs:' +repr(max_num_runs_without_better_params))
             raise ValueError
 
         if mlu.check_file_type_supported(controller_archive_file_type):
@@ -200,6 +204,7 @@ class Controller():
                              'out_extras':self.out_extras,
                              'in_costs':self.in_costs,
                              'in_uncers':self.in_uncers,
+                             'in_params':self.in_params,
                              'in_bads':self.in_bads,
                              'in_valid':self.in_valids,
                              'in_extras':self.in_extras,
@@ -223,7 +228,8 @@ class Controller():
 
     def check_end_conditions(self):
         '''
-        Check whether either of the three end contions have been met: number_of_runs, target_cost or max_num_runs_without_better_params.
+        Check whether either of the three end contions have been met: number_of_runs,
+        target_cost or max_num_runs_without_better_params.
         Returns:
             bool : True, if the controlled should continue, False if the controller should end.
         '''
@@ -242,31 +248,51 @@ class Controller():
                                   'min_boundary':self.learner.min_boundary,
                                   'max_boundary':self.learner.max_boundary})
 
-
     def _put_params_and_out_dict(self, params,  param_type=None, **kwargs):
         '''
         Send parameters to queue and whatever additional keywords. Saves sent variables in appropriate storage arrays.
         Args:
-            params (array) : array of values to be sent to file
+            params (np.array) : array of values to be sent to file
         Keyword Args:
             **kwargs: any additional data to be attached to file sent to experiment
         '''
-        out_dict = {'params':params}
+        out_dict = {'params':params} 
         out_dict.update(kwargs)
+        
         self.params_out_queue.put(out_dict)
         self.num_out_params += 1
         self.last_out_params = params
         self.out_params.append(params)
         self.out_extras.append(kwargs)
+        
         if param_type is not None:
             self.out_type.append(param_type)
-        self.log.info('params ' + str(params))
+
+        self.log.info('params '+ str(params))
         #self.log.debug('Put params num:' + repr(self.num_out_params ))
 
+    def _compare_list(self, list1, list2, float_num=8):
+        '''
+        If list1 and list2 is different, returns True.
+        '''
+
+        if np.size(list1) != np.size(list2):
+            return False
+        else:
+            fix_list1 = np.array(list(map(lambda x :round(x,8),list1)))
+            fix_list2 = np.array(list(map(lambda x :round(x,8),list2)))
+            diff = np.abs(np.sum(fix_list1 - fix_list2))
+#            self.log.info('diff : '+ str(diff))
+#            self.log.info( str(diff < (1.0/(10**float_num))))
+            return  diff > (1.0/(10**float_num))
+         
     def _get_cost_and_in_dict(self):
         '''
-        Get cost, uncertainty, parameters, bad and extra data from experiment. Stores in a list of history and also puts variables in their appropriate 'current' variables
-        Note returns nothing, stores everything in the internal storage arrays and the curr_variables
+        Get cost, uncertainty, parameters, bad and extra data from experiment.
+        Stores in a list of history and also puts variables in their appropriate
+        'current' variables
+        Note returns nothing, stores everything in the internal storage arrays
+        and the curr_variables
         '''
         while True:
             try:
@@ -287,7 +313,8 @@ class Controller():
             self.curr_uncer = float(in_dict.pop('uncer',0))
             self.curr_bad = bool(in_dict.pop('bad',False))
 #            self.curr_extras = [float(__param) for __param in (in_dict.pop('params',in_dict))]
-            self.last_in_params = [float(__param) for __param in (in_dict.pop('params',in_dict))]
+#            self.curr_in_params = [float(__param) for __param in (in_dict.pop('params',in_dict))]
+            self.curr_in_params = np.array([float(__param) for __param in (in_dict.pop('params',[]))])
         except ValueError:
             self.log.error('One of the values you provided in the cost dict could not be converted into the right type.')
             raise
@@ -301,16 +328,21 @@ class Controller():
         self.in_costs.append(self.curr_cost)
         self.in_uncers.append(self.curr_uncer)
         self.in_bads.append(self.curr_bad)
-        self.in_extras.append(self.curr_extras)
-        self.curr_params = self.last_out_params
+        self.in_extras.append(self.curr_extras) 
+        # self.curr_params = self.curr_in_params   # <-- Change
 
-        
-        if (self.curr_in_params is not None) and (self.last_out_params is not None) and (list(self.last_out_params) != list(self.curr_in_params)):
+        if self._compare_list(self.last_out_params, self.curr_in_params):
+            
             self.curr_valid = False
-            self.log.info('invalid run')
+            self.log.info('invalid run: different input/output params.')
+            self.curr_params = list(self.curr_in_params)  # <-- Change
             
         else:
             self.curr_valid = True
+            self.log.info('valid input-output relation.')
+            self.curr_params = self.last_out_params # <-- Change
+
+        # save the history of the consistency of input-output parameters 
         self.in_valids.append(self.curr_valid)
             
         if self.curr_cost < self.best_cost:
@@ -324,9 +356,9 @@ class Controller():
             self.log.info('bad run')
             
         else:
-            self.log.info('curr in params:' + str(self.curr_in_params))
-            self.log.info('last out params:' + str(self.last_out_params))
-            self.log.info('curr_params: ' + str(self.curr_params))
+            self.log.info('L346 curr in params:' + str(self.curr_in_params))
+            self.log.info('L347 last out params:' + str(self.last_out_params))
+            self.log.info('L348 curr_params: ' + str(self.curr_params))
             self.log.info('cost ' + str(self.curr_cost) + ' +/- ' + str(self.curr_uncer))
             
         #self.log.debug('Got cost num:' + repr(self.num_in_costs))
