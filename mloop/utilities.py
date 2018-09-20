@@ -23,10 +23,11 @@ else:
     import queue
     empty_exception = queue.Empty
 
-
 default_interface_in_filename = 'exp_output'
 default_interface_out_filename = 'exp_input'
 default_interface_file_type = 'txt'
+default_interface_in_file_type = 'txt'
+default_interface_out_file_type = 'txt'
 
 archive_foldername = './M-LOOP_archives/'
 log_foldername = './M-LOOP_logs/'

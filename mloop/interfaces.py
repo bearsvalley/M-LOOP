@@ -136,12 +136,17 @@ class FileInterface(Interface):
         interface_out_filename (Optional [string]): filename for file written with parameters.
         interface_in_filename (Optional [string]): filename for file written with parameters.
         interface_file_type (Optional [string]): file type to be written either 'mat' for matlab or 'txt' for readible text file. Defaults to 'txt'.
+        interface_in_file_type (Optional [string]): file type to be read either 'mat' for matlab or 'txt' for readible text file. Defaults to 'txt'.
+        interface_out_file_type (Optional [string]): file type to be written either 'mat' for matlab or 'txt' for readible text file. Defaults to 'txt'.
+    
     '''
     
     def __init__(self,
                  interface_out_filename=mlu.default_interface_out_filename, 
                  interface_in_filename=mlu.default_interface_in_filename,
                  interface_file_type=mlu.default_interface_file_type,
+                 interface_in_file_type=mlu.default_interface_in_file_type,
+                 interface_out_file_type=mlu.default_interface_out_file_type,
                  **kwargs):
         
         super(FileInterface,self).__init__(**kwargs)
@@ -150,8 +155,8 @@ class FileInterface(Interface):
         self.in_file_count = 0
         
         if mlu.check_file_type_supported(interface_file_type):
-            self.out_file_type = str(interface_file_type)
-            self.in_file_type = str(interface_file_type)
+            self.out_file_type = str(interface_out_file_type)
+            self.in_file_type = str(interface_in_file_type)
         else:
             self.log.error('File out type is not supported:' + interface_file_type)
         self.out_filename = str(interface_out_filename)

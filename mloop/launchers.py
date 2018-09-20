@@ -10,8 +10,7 @@ import mloop.controllers as mlc
 import mloop.interfaces as mli
 import mloop.visualizations as mlv
 
-def launch_from_file(config_filename, 
-                     **kwargs):
+def launch_from_file(config_filename, **kwargs):
     '''
     Launch M-LOOP using a configuration file. See configuration file documentation.
     
