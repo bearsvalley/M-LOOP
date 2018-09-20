@@ -312,8 +312,6 @@ class Controller():
             self.curr_cost = float(in_dict.pop('cost',float('nan')))
             self.curr_uncer = float(in_dict.pop('uncer',0))
             self.curr_bad = bool(in_dict.pop('bad',False))
-#            self.curr_extras = [float(__param) for __param in (in_dict.pop('params',in_dict))]
-#            self.curr_in_params = [float(__param) for __param in (in_dict.pop('params',in_dict))]
             self.curr_in_params = np.array([float(__param) for __param in (in_dict.pop('params',[]))])
         except ValueError:
             self.log.error('One of the values you provided in the cost dict could not be converted into the right type.')
@@ -334,12 +332,12 @@ class Controller():
         if self._compare_list(self.last_out_params, self.curr_in_params):
             
             self.curr_valid = False
-            self.log.info('invalid run: different input/output params.')
+            self.log.info('Parameters Consistency: Invalid! different input/output params.')
             self.curr_params = list(self.curr_in_params)  # <-- Change
             
         else:
             self.curr_valid = True
-            self.log.info('valid input-output relation.')
+            self.log.info('Parameters Consistency: Valid run.')
             self.curr_params = self.last_out_params # <-- Change
 
         # save the history of the consistency of input-output parameters 
@@ -353,12 +351,12 @@ class Controller():
             self.num_last_best_cost = 0
             
         if self.curr_bad:
-            self.log.info('bad run')
+            self.log.info('Expeariment Status: bad run')
             
         else:
-            self.log.info('L346 curr in params:' + str(self.curr_in_params))
-            self.log.info('L347 last out params:' + str(self.last_out_params))
-            self.log.info('L348 curr_params: ' + str(self.curr_params))
+#            self.log.info('L346 curr in params:' + str(self.curr_in_params))
+#            self.log.info('L347 last out params:' + str(self.last_out_params))
+#            self.log.info('L348 curr_params: ' + str(self.curr_params))
             self.log.info('cost ' + str(self.curr_cost) + ' +/- ' + str(self.curr_uncer))
             
         #self.log.debug('Got cost num:' + repr(self.num_in_costs))
