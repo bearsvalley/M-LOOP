@@ -275,15 +275,12 @@ class Controller():
         '''
         If list1 and list2 is different, returns True.
         '''
-
         if np.size(list1) != np.size(list2):
             return False
         else:
             fix_list1 = np.array(list(map(lambda x :round(x,8),list1)))
             fix_list2 = np.array(list(map(lambda x :round(x,8),list2)))
             diff = np.abs(np.sum(fix_list1 - fix_list2))
-#            self.log.info('diff : '+ str(diff))
-#            self.log.info( str(diff < (1.0/(10**float_num))))
             return  diff > (1.0/(10**float_num))
          
     def _get_cost_and_in_dict(self):
@@ -308,6 +305,7 @@ class Controller():
         if not ('cost' in in_dict) and (not ('bad' in in_dict) or not in_dict['bad']):
             self.log.error('You must provide at least the key cost or the key bad with True.')
             raise ValueError
+        
         try:
             self.curr_cost = float(in_dict.pop('cost',float('nan')))
             self.curr_uncer = float(in_dict.pop('uncer',0))
@@ -316,11 +314,15 @@ class Controller():
         except ValueError:
             self.log.error('One of the values you provided in the cost dict could not be converted into the right type.')
             raise
-        if self.curr_bad and ('cost' in in_dict):
-            self.log.warning('The cost provided with the bad run will be saved, but not used by the learners.')
 
-        if self.curr_valid is True:
-            self.log.warning('The cost provided with the in valid run will be saved, but not used by the learners.')
+        
+        if self.curr_bad and ('cost' in in_dict):
+            self.log.warning('Cost of bad run is saved, but not used by the learners.')
+
+        if self.curr_valid is None:
+            pass
+        elif self.curr_valid is not True:
+            self.log.warning('Cost of invalid run is saved, but not used by the learners.')
 
         self.in_params.append(self.curr_in_params)
         self.in_costs.append(self.curr_cost)
@@ -329,15 +331,21 @@ class Controller():
         self.in_extras.append(self.curr_extras) 
         # self.curr_params = self.curr_in_params   # <-- Change
 
-        if self._compare_list(self.last_out_params, self.curr_in_params):
+        if self.curr_in_params.size == 0 :
+            self.curr_valid = True
+            self.log.info('No paramator is listed in the input file.')
+            self.curr_params = self.last_out_params # <-- Change
             
+        elif self._compare_list(self.last_out_params, self.curr_in_params):
             self.curr_valid = False
-            self.log.info('Parameters Consistency: Invalid! different input/output params.')
+            print('self.last_out_params : '+str(self.last_out_params))
+            self.log.info('self.curr_in_params : '+str(self.curr_in_params))
+            self.log.info('input params and output params is not the same,which means the output is from other process.')
             self.curr_params = list(self.curr_in_params)  # <-- Change
             
         else:
             self.curr_valid = True
-            self.log.info('Parameters Consistency: Valid run.')
+            self.log.info('Parameters Consistency: OK')
             self.curr_params = self.last_out_params # <-- Change
 
         # save the history of the consistency of input-output parameters 
@@ -354,27 +362,30 @@ class Controller():
             self.log.info('Expeariment Status: bad run')
             
         else:
-#            self.log.info('L346 curr in params:' + str(self.curr_in_params))
-#            self.log.info('L347 last out params:' + str(self.last_out_params))
-#            self.log.info('L348 curr_params: ' + str(self.curr_params))
             self.log.info('cost ' + str(self.curr_cost) + ' +/- ' + str(self.curr_uncer))
-            
-        #self.log.debug('Got cost num:' + repr(self.num_in_costs))
 
     def save_archive(self):
         '''
         Save the archive associated with the controller class. Only occurs if the filename for the archive is not None. Saves with the format previously set.
         '''
         if self.controller_archive_filename is not None:
-            self.archive_dict.update({'num_in_costs':self.num_in_costs,
+
+            try:
+                self.archive_dict.update({'num_in_costs':self.num_in_costs,
                                       'num_out_params':self.num_out_params,
                                       'best_cost':self.best_cost,
                                       'best_uncer':self.best_uncer,
                                       'best_params':self.best_params,
                                       'best_index':self.best_index})
+            except (ValueError, TypeError):
+                self.archive_dict.update({'num_in_costs':self.num_in_costs,
+                                      'num_out_params':self.num_out_params,
+                                      'best_cost':self.best_cost})
+                                      
+                
             try:
                 mlu.save_dict_to_file(self.archive_dict,self.total_archive_filename,self.controller_archive_file_type)
-            except ValueError:
+            except (ValueError, TypeError):
                 self.log.error('Attempted to save with unknown archive file type, or some other value error.')
                 raise
         else:
@@ -409,16 +420,20 @@ class Controller():
         
         #create cotroller result file
         result_dict = {}
-        if self.predicted_best_parameters is not None:
-            result_dict = {}
+        try : 
             result_dict['status'] = 0
             result_dict['predicted_best_parameters']  = self.predicted_best_parameters
             result_dict['predicted_best_cost']        = self.predicted_best_cost
             result_dict['predicted_best_uncertainty'] = self.predicted_best_uncertainty
-        else:
+            #        else:
+        except AttributeError:
+            result_dict = {}
             result_dict['status'] = -1
+            result_dict['predicted_best_parameters']  = None
+            result_dict['predicted_best_cost']        = None
+            result_dict['predicted_best_uncertainty'] = None
+            
         mlu.save_dict_to_file(result_dict, self.total_result_filename, self.controller_result_file_type)
-        
         
     def _start_up(self):
         '''

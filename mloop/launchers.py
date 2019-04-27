@@ -43,7 +43,6 @@ def launch_from_file(config_filename, **kwargs):
     controller.optimize()
     #Launch post processing extras
     launch_extras(controller, **extras_kwargs)  
-    
     return controller 
 
 def launch_extras(controller,visualizations=True, **kwargs):

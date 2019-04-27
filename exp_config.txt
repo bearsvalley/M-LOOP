@@ -193,7 +193,7 @@ num_training_runs = None
 
 #filename for training from previous experiment
 
-gp_training_filename ='/home/a9021/M-LOOP/M-LOOP_archives/learner_archive_2018-08-09_15-54.txt'
+#gp_training_filename ='/home/a9021/M-LOOP/M-LOOP_archives/learner_archive_2018-08-09_15-54.txt'
 #training data file type
 
 gp_training_file_type  = 'txt'         

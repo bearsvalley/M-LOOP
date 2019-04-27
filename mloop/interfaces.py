@@ -15,7 +15,7 @@ import mloop.utilities as mlu
 import mloop.testing as mlt
 import logging
 
-def create_interface(interface_type='file', 
+def create_interface(interface_type='file',
                       **interface_config_dict):
     '''
     Start a new interface with the options provided.
@@ -143,6 +143,7 @@ class FileInterface(Interface):
     def __init__(self,
                  interface_out_filename = mlu.default_interface_out_filename, 
                  interface_in_filename = mlu.default_interface_in_filename,
+                 interface_file_type = mlu.default_interface_file_type,
                  interface_in_file_type = mlu.default_interface_in_file_type,
                  interface_out_file_type = mlu.default_interface_out_file_type,
                  **kwargs):
@@ -155,14 +156,18 @@ class FileInterface(Interface):
         if mlu.check_file_type_supported(interface_out_file_type):
             self.out_file_type = str(interface_out_file_type)
         else:
-            self.log.error('Output file type is not supported:' + interface_out_file_type)
+            if mlu.check_file_type_supported(interface_file_type):
+                self.out_file_type = str(interface_file_type)
+            else:
+                self.log.error('Output file type is not supported:' + interface_out_file_type)
 
         if mlu.check_file_type_supported(interface_in_file_type):
             self.in_file_type = str(interface_in_file_type)
         else:
-            self.log.error('Input file type is not supported:' + interface_out_file_type)
-            
-
+            if mlu.check_file_type_supported(interface_file_type):
+                self.in_file_type = str(interface_file_type)
+            else:
+                self.log.error('Input file type is not supported:' + interface_in_file_type)
             
         self.out_filename = str(interface_out_filename)
         self.total_out_filename = self.out_filename + '.' + self.out_file_type

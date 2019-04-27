@@ -8,7 +8,7 @@ import mloop.utilities as mlu
 import numpy as np
 import numpy.random as nr
 import sklearn.preprocessing as skp
-import tensorflow as tf
+#import tensorflow as tf
 
 class SingleNeuralNet():
     '''

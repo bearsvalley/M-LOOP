@@ -142,7 +142,11 @@ def save_dict_to_file(dictionary,filename,file_type):
         file_type: The file_type for the saved file. Can be 'mat' for matlab, 'txt' for text, or 'pkl' for pickle.
     '''
     if file_type=='mat':
-        si.savemat(filename,dictionary)
+        dict_to_txt_file(dictionary,filename)
+#        try:
+#            si.savemat(filename,dictionary)
+#        except TypeError:
+            
     elif file_type=='txt':
         dict_to_txt_file(dictionary,filename)
     elif file_type=='pkl':

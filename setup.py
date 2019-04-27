@@ -27,8 +27,8 @@ def main():
                             'matplotlib>=1.5',
                             'plotly>=2.0.8',
                             'pytest>=2.9',
-                            'scikit-learn>=0.18',
-                            'tensorflow>=1.2.0'],
+                            'scikit-learn>=0.18'],
+#                            'tensorflow>=1.2.0'],
         tests_require=['pytest','setuptools>=26'],
         
         package_data = {
