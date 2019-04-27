@@ -907,6 +907,17 @@ class GaussianProcessLearner(Learner, mp.Process):
         gaussian_process (GaussianProcessRegressor): Gaussian process that is fitted to data and used to make predictions
         cost_scaler (StandardScaler): Scaler used to normalize the provided costs. 
         has_trust_region (bool): Whether the learner has a trust region. 
+
+        parameter_searches (int): number of iteration to find a parameter-candiates.
+                                  This value is ignored if this value is smaller than the parameter number.
+        hyperparameter_searches (int): number of optimaizers to find hyperparameters.
+                                  This value is ignored if this value is smaller than the parameter number.
+        bias_func_cycle  (4): a number of weight-patterns.
+        bias_func_cost_factor ([1.0,1.0,1.0,1.0]): weight of cost factor
+        bias_func_uncer_factor ([0.0,1.0,2.0,3.0]): weight for uncer factor
+        search_precision (1.0e-6): tolerance of parameter-search iterations 
+        bad_uncer_frac  (0.1): Fraction of cost range to set a bad run uncertainty 
+
     ''' 
     
     def __init__(self, 
@@ -921,6 +932,13 @@ class GaussianProcessLearner(Learner, mp.Process):
                  gp_training_filename =None,
                  gp_training_file_type ='txt',
                  predict_global_minima_at_end = True,
+                 parameter_searches = 10,
+                 hyperparameter_searches = 10,
+                 bias_func_cycle = 4,
+                 bias_func_cost_factor=[1.0,1.0,1.0,1.0],
+                 bias_func_uncer_factor=[0.0,1.0,2.0,3.0],
+                 search_precision = 1.0e-6,
+                 bad_uncer_frac = 0.1, 
                  **kwargs):
         
         if gp_training_filename is not None:
@@ -971,14 +989,21 @@ class GaussianProcessLearner(Learner, mp.Process):
             except KeyError:
                 self.has_global_minima = False
 
+            try:
+                self.hyperparameter_searches = int(self.training_dict['hyperparameter_searches'])
+                self.parameter_searches = int(self.training_dict['parameter_searches'])
+            except KeyError:
+                pass
+                
             #--------- start change
             # To prevent TypeError like,
             #   "TypeError: __init__() got multiple values for keyword argument ..."
             # some fields in kwargs are removed in advance.
-            #
+            
             num_params_init = kwargs.pop('num_params',None)
             min_boundary_init = kwargs.pop('min_boundary',None)
             max_boundary_init = kwargs.pop('max_boundary',None)
+
             #--------- end change
             
             super(GaussianProcessLearner,self).__init__(num_params=num_params,
@@ -1008,6 +1033,9 @@ class GaussianProcessLearner(Learner, mp.Process):
             self.fit_count = 0
             self.params_count = 0
             self.has_global_minima = False
+
+            self.parameter_searches = parameter_searches
+            self.hyperparameter_searches = hyperparameter_searches
             
             #Optional user set variables
             if length_scale is None:
@@ -1028,20 +1056,19 @@ class GaussianProcessLearner(Learner, mp.Process):
         self.uncer_bias = None
         
         #Internal variable for bias function
-        self.bias_func_cycle = 4
-        self.bias_func_cost_factor = [1.0,1.0,1.0,1.0] 
-        self.bias_func_uncer_factor =[0.0,1.0,2.0,3.0]
+        self.bias_func_cycle = bias_func_cycle
+        self.bias_func_cost_factor = bias_func_cost_factor
+        self.bias_func_uncer_factor = bias_func_uncer_factor
         self.generation_num = self.bias_func_cycle
         if self.generation_num < 3:
             self.log.error('Number in generation must be larger than 2.')
             raise ValueError
         
         #Constants, limits and tolerances
-        self.search_precision = 1.0e-6
-        self.parameter_searches = max(10,self.num_params)
-        self.hyperparameter_searches = max(10,self.num_params)
-        self.bad_uncer_frac = 0.1 #Fraction of cost range to set a bad run uncertainty 
-        
+        self.search_precision = search_precision
+        self.parameter_searches = max(self.parameter_searches,self.num_params)
+        self.hyperparameter_searches = max(self.hyperparameter_searches,self.num_params)
+        self.bad_uncer_frac = bad_uncer_frac #Fraction of cost range to set a bad run uncertainty 
         #Optional user set variables
         self.update_hyperparameters = bool(update_hyperparameters)
         self.predict_global_minima_at_end = bool(predict_global_minima_at_end)
@@ -1332,6 +1359,7 @@ class GaussianProcessLearner(Learner, mp.Process):
         Return:
             next_params (array): Returns next parameters from biased cost search.
         '''
+        
         self.params_count += 1
         self.update_bias_function()
         self.update_search_params()
