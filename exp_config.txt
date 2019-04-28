@@ -136,6 +136,22 @@ update_hyperparameters = True
 
 predict_global_minima_at_end  = True
 
+# internal iteration number to determine next candidate of parameters
+parameter_searches = 22
+
+# iterations for hyperparameters
+# like RBF-kernel's scaling factor and noise level of cost.
+hyperparameter_searches = 22
+
+# A period of weights changing in the aquisition function 
+bias_func_cycle = 5
+
+# weight for likelifood
+bias_func_cost_factor = [ 1, 0.8, 0.6, 0.4, 0.2]
+
+# weight for uncertainty
+bias_func_uncer_factor = [0, 0.2, 0.4, 0.6, 0.8]
+
 #====================================
 # Halting conditions
 #====================================
