@@ -50,8 +50,6 @@ def create_controller(interface,
     controller_type = str(controller_type)
     if controller_type=='gaussian_process':
         controller = GaussianProcessController(interface, **controller_config_dict)
-    elif controller_type=='neural_net':
-        controller = NeuralNetController(interface, **controller_config_dict)
     elif controller_type=='differential_evolution':
         controller = DifferentialEvolutionController(interface, **controller_config_dict)
     elif controller_type=='nelder_mead':
@@ -155,6 +153,7 @@ class Controller():
         self.learner_costs_queue = None
         self.end_learner = None
         self.learner = None
+        self.ml_learner = None
 
         #Variables set by user
 
@@ -176,7 +175,7 @@ class Controller():
             self.start_datetime = datetime.datetime(start_datetime)
         self.max_num_runs = float(max_num_runs)
         if self.max_num_runs<=0:
-            self.log.error('Number of runs must be greater than zero. max_num_runs:'+repr(self.max_num_run))
+            self.log.error('Number of runs must be greater than zero. max_num_runs:'+repr(self.max_num_runs))
             raise ValueError
         self.target_cost = float(target_cost)
         self.max_num_runs_without_better_params = float(max_num_runs_without_better_params)
@@ -691,6 +690,7 @@ class MachineLearnerController(Controller):
 
     def _update_controller_with_machine_learner_attributes(self):
 
+        # editing self.ml_learner -> self.learner 
         self.ml_learner_params_queue = self.ml_learner.params_out_queue
         self.ml_learner_costs_queue = self.ml_learner.costs_in_queue
         self.end_ml_learner = self.ml_learner.end_event
@@ -811,8 +811,6 @@ class MachineLearnerController(Controller):
                 self.new_params_event.set()
                 ml_count = 0
                 
-
-
     def _shut_down(self):
         '''
         Shutdown and clean up resources of the machine learning controller.
@@ -903,41 +901,3 @@ class GaussianProcessController(MachineLearnerController):
 
         self._update_controller_with_machine_learner_attributes()
 
-class NeuralNetController(MachineLearnerController):
-    '''
-    Controller for the Neural Net solver. Primarily suggests new points from the Neural Net learner. However, during the initial few runs it must rely on a different optimization algorithm to get some points to seed the learner.
-    Args:
-        interface (Interface): The interface to the experiment under optimization.
-        **kwargs (Optional [dict]): Dictionary of options to be passed to MachineLearnerController parent class and Neural Net learner.
-    Keyword Args:
-    '''
-
-    def __init__(self, interface,
-                 num_params=None,
-                 min_boundary=None,
-                 max_boundary=None,
-                 trust_region=None,
-                 learner_archive_filename = mll.default_learner_archive_filename,
-                 learner_archive_file_type = mll.default_learner_archive_file_type,
-                 **kwargs):
-        
-        super(NeuralNetController,self).__init__(interface, 
-                                                machine_learner_type='neural_net',
-                                                num_params=num_params,
-                                                min_boundary=min_boundary,
-                                                max_boundary=max_boundary,
-                                                trust_region=trust_region,
-                                                learner_archive_filename=learner_archive_filename,
-                                                learner_archive_file_type=learner_archive_file_type, 
-                                                **kwargs)   
-
-        self.ml_learner = mll.NeuralNetLearner(start_datetime=self.start_datetime,
-                                               num_params=num_params,
-                                               min_boundary=min_boundary,
-                                               max_boundary=max_boundary,
-                                               trust_region=trust_region,
-                                               learner_archive_filename=learner_archive_filename,
-                                               learner_archive_file_type=learner_archive_file_type,
-                                               **self.remaining_kwargs)
-
-        self._update_controller_with_machine_learner_attributes()

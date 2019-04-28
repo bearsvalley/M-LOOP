@@ -37,8 +37,8 @@ def launch_from_file(config_filename, **kwargs):
     #Extract keywords for post processing extras, and raise an error if any keywords were unused. 
     extras_kwargs = _pop_extras_kwargs(file_kwargs)
     if file_kwargs:
-        logging.getLogger(__name__).error('Unused extra options provided:' + repr(file_kwargs))
-        raise ValueError
+        logging.getLogger(__name__).warning('Unused extra options provided:' + repr(file_kwargs))
+    #   raise ValueError
     #Run the actual optimization
     controller.optimize()
     #Launch post processing extras
@@ -64,6 +64,10 @@ def _pop_extras_kwargs(kwargs):
         
     '''
     extras_kwargs={}
+
+    if 'parameter_searches' in kwargs:
+        extras_kwargs['parameter_searches'] = kwargs.pop('parameter_searches')
+    
     if 'visualizations' in kwargs:
         extras_kwargs['visualizations'] = kwargs.pop('visualizations')
     return extras_kwargs

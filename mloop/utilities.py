@@ -16,12 +16,12 @@ import mloop
 python_version = sys.version_info[0]
 
 #For libraries with different names in pythons 2 and 3
-if python_version < 3:
-    import Queue #@UnresolvedImport @UnusedImport
-    empty_exception = Queue.Empty
-else:
-    import queue
-    empty_exception = queue.Empty
+#if python_version < 3:
+#    import Queue #@UnresolvedImport @UnusedImport
+#    empty_exception = Queue.Empty
+#else:
+import queue
+empty_exception = queue.Empty
 
 default_interface_in_filename = 'exp_output'
 default_interface_out_filename = 'exp_input'
@@ -124,7 +124,7 @@ def txt_file_to_dict(filename):
     inf = float('inf')  #@UnusedVariable
     nan = float('nan')  #@UnusedVariable
 
-    #skip occasional bad input file format by bearsvally Aug.9/2018 
+    #skip occasional bad input file format: (by bearsvally Aug.9/2018) 
     try:
         tdict = eval('dict('+tdict_string+')')
     except:
